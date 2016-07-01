@@ -1,0 +1,30 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="LauncherLesAuDacieuX.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ARMA3_PATH" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:/Program Files (x86)/Steam/steamapps/common/Arma 3/TEST/</Value>
+    </Setting>
+    <Setting Name="TS3_PATH" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Program Files\TeamSpeak 3 Client</Value>
+    </Setting>
+    <Setting Name="SERVER_IP" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">85.131.221.137</Value>
+    </Setting>
+    <Setting Name="SERVER_PORT" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">2302</Value>
+    </Setting>
+    <Setting Name="ADDON_LIST" Type="System.String" Scope="User">
+      <Value Profile="(Default)">@CBA_A3;@task_force_radio;@LADX;</Value>
+    </Setting>
+    <Setting Name="REMOTE_ARMA3_PATH" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">\\85.131.221.137\Arma 3\</Value>
+    </Setting>
+    <Setting Name="REMOTE_TS3_PATH" Type="System.String" Scope="User">
+      <Value Profile="(Default)">\\85.131.221.137\TeamSpeak 3 Client\</Value>
+    </Setting>
+    <Setting Name="TEMP_FILE_NAME" Type="System.String" Scope="User">
+      <Value Profile="(Default)">AuDacieuX.tmp</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
