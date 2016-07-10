@@ -25,7 +25,7 @@ namespace LauncherLesAuDacieuX.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:/Program Files (x86)/Steam/steamapps/common/Arma 3/TEST/")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:/Program Files (x86)/Steam/steamapps/common/Arma 3/")]
         public string ARMA3_PATH {
             get {
                 return ((string)(this["ARMA3_PATH"]));

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -35,21 +37,86 @@ namespace LauncherLesAuDacieuX
 
         #endregion
 
-        public App()
+        #region THREAD SAFED
+
+        internal void ThreadSafe(Action action)
         {
-            InitializeComponent();
-            labelDownloadSpeed.Text = "";
-            labelLog.Text = "";
-            buttonGo.Enabled = false;
+            BeginInvoke((MethodInvoker) delegate { action?.Invoke(); });
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        internal void Log(string shortMessage, Color color)
+        {
+            ThreadSafe(() =>
+            {
+                labelLog.ForeColor = color;
+                if (shortMessage != null)
+                    labelLog.Text = shortMessage;
+                Task.Delay(1000);
+            });
+        }
+
+        internal void DownloadProgress(object sender, DownloadProgressChangedEventArgs e)
+        {
+            ThreadSafe(() =>
+            {
+                progressBarEx1.Value = e.ProgressPercentage;
+                labelDownloadSpeed.Text = Core.FormatBytes(e.BytesReceived) + "/" +
+                                          Core.FormatBytes(e.TotalBytesToReceive);
+            });
+        }
+
+        private void ExtractProgress(float percent)
+        {
+            ThreadSafe(() =>
+            {
+                progressBarEx1.Value = (int)percent;
+            });
+        }
+
+        private void ClearProgress()
+        {
+            ThreadSafe(() =>
+            {
+                progressBarEx1.Value = 0;
+                labelDownloadSpeed.Text = "";
+            });
+        }
+
+        private void Ok()
+        {
+            ThreadSafe(() =>
+            {
+                progressBarEx1.Value = progressBarEx1.Maximum;
+                progressBarEx1.ProgressColor = Color.Green;
+                buttonGo.Visible = true;
+                labelLog.Text = @"Verrification terminée";
+            });
+        }
+
+        private void Fail()
+        {
+            ThreadSafe(() =>
+            {
+                progressBarEx1.Value = progressBarEx1.Maximum;
+                progressBarEx1.ProgressColor = Color.DarkRed;
+                buttonGo.Visible = true;
+                buttonGo.Text = @"Réesayer";
+                buttonGo.Click += (sender, args) => CheckForUpdate();
+                labelLog.Text = @"Echec de la mise à jour veuillez réesayer";
+            });
+        }
+
+        #endregion
+
+        #region EVENT
+
+        private void buttonClose_Click(object sender, EventArgs e)
         {
             Application.Exit();
             this.ActiveControl = null;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void buttonMinimize_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
             this.ActiveControl = null;
@@ -58,6 +125,30 @@ namespace LauncherLesAuDacieuX
         private void buttonGo_Click(object sender, EventArgs e)
         {
             Core.LaunchArma3();
+        }
+
+        #endregion
+
+        public App()
+        {
+            InitializeComponent();
+            labelDownloadSpeed.Text = "";
+            labelLog.Text = "";
+            buttonGo.Visible = false;
+            CheckForUpdate();
+        }
+
+        public void CheckForUpdate()
+        {
+            new Thread(() =>
+            {
+                LocalVerification();
+                Task.Delay(1000).Wait();
+                RemoteVerification();
+                Task.Delay(1000).Wait();
+                UpdateVerification();
+                Ok();
+            }).Start();
         }
 
         public void Log(string shortMessage)
@@ -70,42 +161,12 @@ namespace LauncherLesAuDacieuX
             Log(shortMessage, Color.OrangeRed);
         }
 
-        private void Log(string shortMessage, Color color)
-        {
-            //Thread Safe
-            BeginInvoke((MethodInvoker) delegate
-            {
-                labelLog.ForeColor = color;
-                if (shortMessage != null)
-                    labelLog.Text = shortMessage;
-                Task.Delay(1000);
-            });
-        }
-
-        public void OnDownloadSuccess()
-        {
-            //Thread Safe
-            BeginInvoke((MethodInvoker) delegate
-            {
-                labelDownloadSpeed.Text = "";
-            });
-        }
-
-        public void Success()
-        {
-            //Thread Safe
-            BeginInvoke((MethodInvoker)delegate
-            {
-                progressBarEx1.Visible = false;
-                buttonGo.Enabled = true;
-            });
-        }
 
         private bool LocalVerification()
         {
             if (Core.GetArma3Path() == null) {      LogError("Arma 3 est introuvable");                      return false; }
             if (Core.GetTeamSpeakPath() == null) {  LogError("TeamSpeak 3 Client est introuvable");          return false; }
-            Log("installation ok");
+            Log("Installation ok");
             return true;
         }
 
@@ -113,68 +174,40 @@ namespace LauncherLesAuDacieuX
         {
             if (!Core.CheckInternetConnection()) {   LogError("pas de connexion internet");                   return false; }
             if (!Core.CheckServerOnline()) {         LogError("le serveur est hors ligne pour l'instant");    return false; }
-            Log("serveur ok");
+            Log("Serveur en ligne");
             return true;
         }
 
         private bool UpdateVerification()
         {
-            
-            if (Core.CheckForUpdate())
+            var localConfig = Config.LoadLocal();
+            Mod TFS_A3 = new Mod() { Extract_code = "A3", Name = "TFR (Arma 3)", Version = 2, ZipUrl = "https://www.dropbox.com/s/28fwjg15pcef7ap/TFR_A3.zip?dl=1" };
+            //var remoteConfigMOK = new Config() { Mods = new List<Mod> { TFS_A3 }, ServerIp = "85.131.221.137", ServerPort = 2302, ServerName = "Les AuDacieuX" };
+            var remoteConfigMOK = Config.LoadRemote("https://raw.githubusercontent.com/Orkad/Launcher/master/config?raw=true");
+            var newMods = Config.ModsDifferencies(localConfig, remoteConfigMOK);
+            bool errors = false;
+            newMods.ForEach(mod =>
             {
-                Config config = new Config("https://github.com/Orkad/Launcher/blob/master/launcher.cfg?raw=true");
-                foreach (var mod in config.Mods)
-                {
-                    Log("téléchargement de " + mod.Name);
-                    mod.DownloadMod(DownloadProgress);
-                    OnDownloadSuccess();
-                    Log("extraction de " + mod.Name);
-                    try { mod.DeployMod(ExtractProgress); }
-                    catch (UnauthorizedAccessException e) { LogError(mod.Name + " accès refusé"); return false; }
-                    catch (IOException e) { LogError(mod.Name + " en cours d'utilisation"); return false; }
-                    mod.DeleteTmpFile();
-                }
-                
-                Log("installation réussie");
-                Success();
-                /*string zip;
-                //TODO en construction
-                try {zip = Core.Download("https://github.com/Orkad/launcher/blob/master/%40CBA_A3.zip" + "?raw=true", OnDownloadChanged).Result; }
-                catch(Exception e) { LogError("erreur lors du téléchargement"); throw e; }
-                Log("téléchargement ok");
-                Core.ExtractZip(zip, @"C:\Users\Orkad\Desktop\TestExtract");*/
+                Log("Téléchargement de " + mod.Name);
+                try{mod.DownloadMod(DownloadProgress);}
+                catch{LogError("Echec du téléchargement de " + mod.Name); errors = true;}
+                ClearProgress();
+            });
+            newMods.ForEach(mod =>
+            {
+                Log("Déploiment de " + mod.Name);
+                try { mod.DeployMod(ExtractProgress); }
+                catch { LogError("Echec du déploiment de " + mod.Name); errors = true;}
+                ClearProgress();
+            });
+            if (!errors)
+            {
+                Ok();
+                remoteConfigMOK.Save();
+                return true;
             }
-            return true;
-        }
-
-        private void DownloadProgress(object sender, DownloadProgressChangedEventArgs e)
-        {
-            BeginInvoke((MethodInvoker)delegate
-            {
-                progressBarEx1.Value = e.ProgressPercentage;
-                labelDownloadSpeed.Text = Core.FormatBytes(e.BytesReceived) + "/" +
-                                          Core.FormatBytes(e.TotalBytesToReceive);
-            });
-        }
-
-        private void ExtractProgress(float percent)
-        {
-            BeginInvoke((MethodInvoker)delegate
-            {
-                progressBarEx1.Value = (int) percent;
-            });
-        }
-
-        private void buttonTest_Click(object sender, EventArgs e)
-        {
-            new Thread(() =>
-            {
-                LocalVerification();
-                Task.Delay(1000).Wait();
-                RemoteVerification();
-                Task.Delay(1000).Wait();
-                UpdateVerification();
-            }).Start();
+            Fail();
+            return false;
         }
     }
 }

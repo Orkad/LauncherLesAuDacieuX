@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="ARMA3_PATH" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">C:/Program Files (x86)/Steam/steamapps/common/Arma 3/TEST/</Value>
+      <Value Profile="(Default)">C:/Program Files (x86)/Steam/steamapps/common/Arma 3/</Value>
     </Setting>
     <Setting Name="TS3_PATH" Type="System.String" Scope="Application">
       <Value Profile="(Default)">C:\Program Files\TeamSpeak 3 Client</Value>

@@ -96,7 +96,13 @@ namespace LauncherLesAuDacieuX
             return tempPath;
         }
 
-        public static void Download(string uri, string fileFullPath, DownloadProgressChangedEventHandler handler = null)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="fileFullPath"></param>
+        /// <param name="handler"></param>
+        public static void DownloadFile(string uri, string fileFullPath, DownloadProgressChangedEventHandler handler = null)
         {
             WebClient client = new WebClient();
             if (handler != null)
